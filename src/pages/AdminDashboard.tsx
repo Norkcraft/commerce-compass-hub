@@ -9,7 +9,6 @@ import {
   ShoppingBag, 
   DollarSign, 
   TrendingUp, 
-  BarChart2, 
   Search,
   ArrowUpRight,
   ArrowDownRight,
@@ -23,6 +22,9 @@ import { toast } from "sonner";
 import ProductForm from "@/components/admin/ProductForm";
 import DeleteProductDialog from "@/components/admin/DeleteProductDialog";
 import type { Product } from "@/components/products/ProductCard";
+import { recentOrders, recentUsers } from "@/components/admin/dashboard/mockData";
+import SalesChart from "@/components/admin/dashboard/SalesChart";
+import TopProducts from "@/components/admin/dashboard/TopProducts";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -176,46 +178,11 @@ const AdminDashboard = () => {
           </div>
           
           <div className="grid gap-6 md:grid-cols-2 mb-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Sales Analytics</CardTitle>
-                <CardDescription>Monthly revenue and order trends</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80 bg-gray-100 rounded-md flex items-center justify-center text-gray-500">
-                  [Sales chart would go here]
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Selling Products</CardTitle>
-                <CardDescription>Products with highest sales volume</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {mockProducts.slice(0, 5).map((product, index) => (
-                    <div key={product.id} className="flex items-center">
-                      <div className="h-10 w-10 rounded bg-gray-200 mr-3 flex-shrink-0">
-                        <img src={product.image} alt={product.name} className="h-full w-full object-cover rounded" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
-                        <p className="text-xs text-gray-500">${product.price.toFixed(2)} · {Math.floor(Math.random() * 100) + 10} sold</p>
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-bold">${(product.price * (Math.floor(Math.random() * 100) + 10)).toFixed(2)}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <SalesChart />
+            <TopProducts />
           </div>
           
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
+          <Card>
               <CardHeader>
                 <CardTitle>Recent Orders</CardTitle>
                 <CardDescription>Latest customer purchases</CardDescription>
@@ -290,7 +257,6 @@ const AdminDashboard = () => {
                 </div>
               </CardContent>
             </Card>
-          </div>
         </TabsContent>
         
         <TabsContent value="products">
