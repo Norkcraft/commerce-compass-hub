@@ -1,10 +1,8 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
   Users, 
@@ -17,28 +15,70 @@ import {
   ArrowDownRight,
   Edit,
   Trash2,
-  FileText
+  FileText,
+  Plus
 } from "lucide-react";
 import { mockProducts } from "@/data/mockProducts";
+import { toast } from "sonner";
+import ProductForm from "@/components/admin/ProductForm";
+import DeleteProductDialog from "@/components/admin/DeleteProductDialog";
+import type { Product } from "@/components/products/ProductCard";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [products, setProducts] = useState(mockProducts);
   
-  // Mock order data
-  const recentOrders = [
-    { id: "ORD-001", customer: "John Doe", date: "2023-04-15", status: "Completed", total: 249.99 },
-    { id: "ORD-002", customer: "Jane Smith", date: "2023-04-14", status: "Processing", total: 399.99 },
-    { id: "ORD-003", customer: "Bob Johnson", date: "2023-04-13", status: "Shipped", total: 179.99 },
-    { id: "ORD-004", customer: "Alice Williams", date: "2023-04-12", status: "Completed", total: 529.99 },
-    { id: "ORD-005", customer: "Tom Brown", date: "2023-04-11", status: "Processing", total: 89.99 }
-  ];
+  // Filter products based on search query
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    product.merchant.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    product.category?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  // Mock user data
-  const recentUsers = [
-    { id: 1, name: "John Doe", email: "john.doe@example.com", registeredDate: "2023-04-10" },
-    { id: 2, name: "Jane Smith", email: "jane.smith@example.com", registeredDate: "2023-04-09" },
-    { id: 3, name: "Bob Johnson", email: "bob.johnson@example.com", registeredDate: "2023-04-08" }
-  ];
+  const handleAddProduct = () => {
+    setSelectedProduct(null);
+    setShowProductForm(true);
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setShowProductForm(true);
+  };
+
+  const handleDeleteProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setShowDeleteDialog(true);
+  };
+
+  const handleProductSubmit = (productData: Partial<Product>) => {
+    if (selectedProduct) {
+      // Edit existing product
+      setProducts(products.map(p => 
+        p.id === selectedProduct.id ? { ...p, ...productData } : p
+      ));
+      toast.success("Product updated successfully");
+    } else {
+      // Add new product
+      const newProduct = {
+        ...productData,
+        id: Math.max(...products.map(p => p.id)) + 1,
+      } as Product;
+      setProducts([...products, newProduct]);
+      toast.success("Product added successfully");
+    }
+  };
+
+  const handleProductDelete = () => {
+    if (selectedProduct) {
+      setProducts(products.filter(p => p.id !== selectedProduct.id));
+      setShowDeleteDialog(false);
+      toast.success("Product deleted successfully");
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -60,7 +100,6 @@ const AdminDashboard = () => {
           <TabsTrigger value="users">Users</TabsTrigger>
         </TabsList>
         
-        {/* Overview Tab */}
         <TabsContent value="overview">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
             <Card>
@@ -254,7 +293,6 @@ const AdminDashboard = () => {
           </div>
         </TabsContent>
         
-        {/* Products Tab */}
         <TabsContent value="products">
           <Card>
             <CardHeader>
@@ -268,10 +306,15 @@ const AdminDashboard = () => {
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                     <Input 
                       placeholder="Search products..." 
-                      className="pl-8 w-full sm:w-[200px] lg:w-[300px]" 
+                      className="pl-8 w-full sm:w-[200px] lg:w-[300px]"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
-                  <Button>Add Product</Button>
+                  <Button onClick={handleAddProduct}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Product
+                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -288,7 +331,7 @@ const AdminDashboard = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockProducts.map((product) => (
+                  {filteredProducts.map((product) => (
                     <TableRow key={product.id}>
                       <TableCell className="font-medium">
                         <div className="flex items-center">
@@ -312,10 +355,18 @@ const AdminDashboard = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditProduct(product)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteProduct(product)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -328,7 +379,6 @@ const AdminDashboard = () => {
           </Card>
         </TabsContent>
         
-        {/* Orders Tab */}
         <TabsContent value="orders">
           <Card>
             <CardHeader>
@@ -395,7 +445,6 @@ const AdminDashboard = () => {
           </Card>
         </TabsContent>
         
-        {/* Users Tab */}
         <TabsContent value="users">
           <Card>
             <CardHeader>
@@ -468,6 +517,19 @@ const AdminDashboard = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <ProductForm
+        product={selectedProduct || undefined}
+        isOpen={showProductForm}
+        onClose={() => setShowProductForm(false)}
+        onSubmit={handleProductSubmit}
+      />
+
+      <DeleteProductDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleProductDelete}
+      />
     </div>
   );
 };
