@@ -1,0 +1,475 @@
+
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { 
+  Users, 
+  ShoppingBag, 
+  DollarSign, 
+  TrendingUp, 
+  BarChart2, 
+  Search,
+  ArrowUpRight,
+  ArrowDownRight,
+  Edit,
+  Trash2,
+  FileText
+} from "lucide-react";
+import { mockProducts } from "@/data/mockProducts";
+
+const AdminDashboard = () => {
+  const [activeTab, setActiveTab] = useState("overview");
+  
+  // Mock order data
+  const recentOrders = [
+    { id: "ORD-001", customer: "John Doe", date: "2023-04-15", status: "Completed", total: 249.99 },
+    { id: "ORD-002", customer: "Jane Smith", date: "2023-04-14", status: "Processing", total: 399.99 },
+    { id: "ORD-003", customer: "Bob Johnson", date: "2023-04-13", status: "Shipped", total: 179.99 },
+    { id: "ORD-004", customer: "Alice Williams", date: "2023-04-12", status: "Completed", total: 529.99 },
+    { id: "ORD-005", customer: "Tom Brown", date: "2023-04-11", status: "Processing", total: 89.99 }
+  ];
+
+  // Mock user data
+  const recentUsers = [
+    { id: 1, name: "John Doe", email: "john.doe@example.com", registeredDate: "2023-04-10" },
+    { id: 2, name: "Jane Smith", email: "jane.smith@example.com", registeredDate: "2023-04-09" },
+    { id: 3, name: "Bob Johnson", email: "bob.johnson@example.com", registeredDate: "2023-04-08" }
+  ];
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <p className="text-gray-500">Manage your e-commerce platform</p>
+        </div>
+        <div className="mt-4 md:mt-0">
+          <Button>Export Reports</Button>
+        </div>
+      </div>
+      
+      <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="products">Products</TabsTrigger>
+          <TabsTrigger value="orders">Orders</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+        </TabsList>
+        
+        {/* Overview Tab */}
+        <TabsContent value="overview">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Total Revenue</p>
+                    <p className="text-3xl font-bold">$12,426</p>
+                    <p className="text-xs text-green-500 mt-1 flex items-center">
+                      <ArrowUpRight className="h-3 w-3 mr-1" />
+                      +8.2% from last month
+                    </p>
+                  </div>
+                  <div className="h-12 w-12 bg-brand-100 rounded-full flex items-center justify-center">
+                    <DollarSign className="h-6 w-6 text-brand-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Total Orders</p>
+                    <p className="text-3xl font-bold">142</p>
+                    <p className="text-xs text-green-500 mt-1 flex items-center">
+                      <ArrowUpRight className="h-3 w-3 mr-1" />
+                      +12.5% from last month
+                    </p>
+                  </div>
+                  <div className="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center">
+                    <ShoppingBag className="h-6 w-6 text-purple-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Total Users</p>
+                    <p className="text-3xl font-bold">2,856</p>
+                    <p className="text-xs text-green-500 mt-1 flex items-center">
+                      <ArrowUpRight className="h-3 w-3 mr-1" />
+                      +4.3% from last month
+                    </p>
+                  </div>
+                  <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Users className="h-6 w-6 text-blue-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Profit Margin</p>
+                    <p className="text-3xl font-bold">24.6%</p>
+                    <p className="text-xs text-red-500 mt-1 flex items-center">
+                      <ArrowDownRight className="h-3 w-3 mr-1" />
+                      -2.1% from last month
+                    </p>
+                  </div>
+                  <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <TrendingUp className="h-6 w-6 text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="grid gap-6 md:grid-cols-2 mb-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Sales Analytics</CardTitle>
+                <CardDescription>Monthly revenue and order trends</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80 bg-gray-100 rounded-md flex items-center justify-center text-gray-500">
+                  [Sales chart would go here]
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Top Selling Products</CardTitle>
+                <CardDescription>Products with highest sales volume</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {mockProducts.slice(0, 5).map((product, index) => (
+                    <div key={product.id} className="flex items-center">
+                      <div className="h-10 w-10 rounded bg-gray-200 mr-3 flex-shrink-0">
+                        <img src={product.image} alt={product.name} className="h-full w-full object-cover rounded" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                        <p className="text-xs text-gray-500">${product.price.toFixed(2)} · {Math.floor(Math.random() * 100) + 10} sold</p>
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-bold">${(product.price * (Math.floor(Math.random() * 100) + 10)).toFixed(2)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Orders</CardTitle>
+                <CardDescription>Latest customer purchases</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Order ID</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {recentOrders.slice(0, 5).map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-medium">{order.id}</TableCell>
+                        <TableCell>{order.customer}</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            order.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                            order.status === 'Processing' ? 'bg-blue-100 text-blue-800' :
+                            'bg-amber-100 text-amber-800'
+                          }`}>
+                            {order.status}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <div className="mt-4">
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => setActiveTab("orders")}>
+                    View All Orders
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Users</CardTitle>
+                <CardDescription>Latest registered customers</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentUsers.map((user) => (
+                    <div key={user.id} className="flex items-center">
+                      <div className="h-10 w-10 rounded-full bg-gray-200 mr-3 flex items-center justify-center">
+                        <span className="text-gray-600 font-medium text-sm">
+                          {user.name.split(' ').map(n => n[0]).join('')}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{user.name}</p>
+                        <p className="text-xs text-gray-500">{user.email}</p>
+                      </div>
+                      <div className="ml-4">
+                        <Button variant="ghost" size="sm">
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-8">
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => setActiveTab("users")}>
+                    View All Users
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        
+        {/* Products Tab */}
+        <TabsContent value="products">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col md:flex-row justify-between md:items-center">
+                <div>
+                  <CardTitle>Product Management</CardTitle>
+                  <CardDescription>Manage your product inventory</CardDescription>
+                </div>
+                <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                    <Input 
+                      placeholder="Search products..." 
+                      className="pl-8 w-full sm:w-[200px] lg:w-[300px]" 
+                    />
+                  </div>
+                  <Button>Add Product</Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product Name</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Merchant</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Profit Margin</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mockProducts.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded bg-gray-200 mr-3 flex-shrink-0">
+                            <img src={product.image} alt={product.name} className="h-full w-full object-cover rounded" />
+                          </div>
+                          <span className="truncate max-w-[250px]">{product.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>${product.price.toFixed(2)}</TableCell>
+                      <TableCell>{product.merchant}</TableCell>
+                      <TableCell>{product.category}</TableCell>
+                      <TableCell>
+                        {product.originalPrice ? (
+                          <span className="text-green-600">
+                            {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+                          </span>
+                        ) : (
+                          <span className="text-gray-500">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Orders Tab */}
+        <TabsContent value="orders">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col md:flex-row justify-between md:items-center">
+                <div>
+                  <CardTitle>Order Management</CardTitle>
+                  <CardDescription>Track and manage customer orders</CardDescription>
+                </div>
+                <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                    <Input 
+                      placeholder="Search orders..." 
+                      className="pl-8 w-full sm:w-[200px] lg:w-[300px]" 
+                    />
+                  </div>
+                  <Button>Export Orders</Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Order ID</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentOrders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium">{order.id}</TableCell>
+                      <TableCell>{order.customer}</TableCell>
+                      <TableCell>{order.date}</TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          order.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                          order.status === 'Processing' ? 'bg-blue-100 text-blue-800' :
+                          'bg-amber-100 text-amber-800'
+                        }`}>
+                          {order.status}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon">
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Users Tab */}
+        <TabsContent value="users">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col md:flex-row justify-between md:items-center">
+                <div>
+                  <CardTitle>User Management</CardTitle>
+                  <CardDescription>Manage registered users</CardDescription>
+                </div>
+                <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                    <Input 
+                      placeholder="Search users..." 
+                      className="pl-8 w-full sm:w-[200px] lg:w-[300px]" 
+                    />
+                  </div>
+                  <Button>Add User</Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Registered</TableHead>
+                    <TableHead>Orders</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Array(10).fill(0).map((_, i) => {
+                    const user = {
+                      id: i + 1,
+                      name: ["John Doe", "Jane Smith", "Bob Johnson", "Alice Williams", "Tom Brown"][i % 5],
+                      email: ["john.doe@example.com", "jane.smith@example.com", "bob.johnson@example.com", 
+                              "alice.williams@example.com", "tom.brown@example.com"][i % 5],
+                      registered: ["2023-04-10", "2023-04-09", "2023-04-08", "2023-04-07", "2023-04-06"][i % 5],
+                      orders: Math.floor(Math.random() * 10)
+                    };
+                    
+                    return (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">#{user.id}</TableCell>
+                        <TableCell>{user.name}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>{user.registered}</TableCell>
+                        <TableCell>{user.orders}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="icon">
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default AdminDashboard;
