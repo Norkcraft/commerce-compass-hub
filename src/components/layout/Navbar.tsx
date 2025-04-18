@@ -5,15 +5,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/products?search=${encodeURIComponent(searchQuery)}`);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success("Logged out successfully");
+      navigate("/");
+    } catch (error: any) {
+      toast.error(error.message);
     }
   };
 
@@ -73,23 +87,36 @@ const Navbar = () => {
               </span>
             </Button>
           </Link>
-          <Link to="/account">
-            <Button variant="ghost" size="icon">
-              <User className="h-5 w-5" />
-              <span className="sr-only">Account</span>
-            </Button>
-          </Link>
-          <Link to="/admin">
-            <Button variant="ghost" size="icon">
-              <BarChart className="h-5 w-5" />
-              <span className="sr-only">Admin</span>
-            </Button>
-          </Link>
-          <Link to="/login">
-            <Button variant="outline" size="sm" className="ml-2">
-              Login
-            </Button>
-          </Link>
+          {user ? (
+            <>
+              <Link to="/account">
+                <Button variant="ghost" size="icon">
+                  <User className="h-5 w-5" />
+                  <span className="sr-only">Account</span>
+                </Button>
+              </Link>
+              <Link to="/admin">
+                <Button variant="ghost" size="icon">
+                  <BarChart className="h-5 w-5" />
+                  <span className="sr-only">Admin</span>
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-2"
+                onClick={handleLogout}
+              >
+                Logout
+              </Button>
+            </>
+          ) : (
+            <Link to="/auth">
+              <Button variant="outline" size="sm" className="ml-2">
+                Login
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </header>
