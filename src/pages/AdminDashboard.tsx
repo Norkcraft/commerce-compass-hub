@@ -25,6 +25,8 @@ import type { Product } from "@/components/products/ProductCard";
 import { recentOrders, recentUsers } from "@/components/admin/dashboard/mockData";
 import SalesChart from "@/components/admin/dashboard/SalesChart";
 import TopProducts from "@/components/admin/dashboard/TopProducts";
+import OrderSimulator from "@/components/admin/dashboard/OrderSimulator";
+import { type Order } from "@/components/admin/dashboard/mockData";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -34,7 +36,6 @@ const AdminDashboard = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [products, setProducts] = useState(mockProducts);
   
-  // Filter products based on search query
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     product.merchant.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -58,13 +59,11 @@ const AdminDashboard = () => {
 
   const handleProductSubmit = (productData: Partial<Product>) => {
     if (selectedProduct) {
-      // Edit existing product
       setProducts(products.map(p => 
         p.id === selectedProduct.id ? { ...p, ...productData } : p
       ));
       toast.success("Product updated successfully");
     } else {
-      // Add new product
       const newProduct = {
         ...productData,
         id: Math.max(...products.map(p => p.id)) + 1,
@@ -82,6 +81,22 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleNewOrder = (order: Order) => {
+    setActiveTab(prev => {
+      if (prev !== "overview") {
+        toast.info("New order received! Switch to Overview tab to see live updates.");
+      }
+      return prev;
+    });
+
+    if (window.updateSalesChart) {
+      window.updateSalesChart(order.total);
+    }
+
+    const updatedOrders = [order, ...recentOrders.slice(0, -1)];
+    setRecentOrders(updatedOrders);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
@@ -92,6 +107,10 @@ const AdminDashboard = () => {
         <div className="mt-4 md:mt-0">
           <Button>Export Reports</Button>
         </div>
+      </div>
+      
+      <div className="mb-8">
+        <OrderSimulator onNewOrder={handleNewOrder} />
       </div>
       
       <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
