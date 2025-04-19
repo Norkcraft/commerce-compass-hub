@@ -22,10 +22,7 @@ import { toast } from "sonner";
 import ProductForm from "@/components/admin/ProductForm";
 import DeleteProductDialog from "@/components/admin/DeleteProductDialog";
 import type { Product } from "@/components/products/ProductCard";
-import { recentOrders, recentUsers } from "@/components/admin/dashboard/mockData";
-import SalesChart from "@/components/admin/dashboard/SalesChart";
-import TopProducts from "@/components/admin/dashboard/TopProducts";
-import OrderSimulator from "@/components/admin/dashboard/OrderSimulator";
+import { mockData } from "@/data/mockData";
 import { type Order } from "@/components/admin/dashboard/mockData";
 
 const AdminDashboard = () => {
@@ -35,6 +32,7 @@ const AdminDashboard = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [products, setProducts] = useState(mockProducts);
+  const [recentOrders, setRecentOrders] = useState(mockData.recentOrders);
   
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

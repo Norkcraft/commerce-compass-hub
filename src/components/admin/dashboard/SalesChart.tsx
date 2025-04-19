@@ -5,6 +5,12 @@ import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { salesData } from './mockData';
 
+interface UpdateChartWindow extends Window {
+  updateSalesChart?: (amount: number) => void;
+}
+
+declare let window: UpdateChartWindow;
+
 const SalesChart = () => {
   const [data, setData] = useState(salesData);
 
@@ -24,10 +30,8 @@ const SalesChart = () => {
 
   // Expose the updateChart method to parent components
   useEffect(() => {
-    // @ts-ignore - TypeScript doesn't know about window.updateSalesChart
     window.updateSalesChart = updateChart;
     return () => {
-      // @ts-ignore
       delete window.updateSalesChart;
     };
   }, []);

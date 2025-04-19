@@ -22,8 +22,7 @@ const OrderSimulator = ({ onNewOrder }: OrderSimulatorProps) => {
         const newOrder = generateNewOrder();
         onNewOrder(newOrder);
         
-        toast({
-          title: "New Order Received!",
+        toast.success({
           description: `${newOrder.customer} placed an order for $${newOrder.total.toFixed(2)}`,
           icon: <Package className="h-4 w-4" />,
         });
