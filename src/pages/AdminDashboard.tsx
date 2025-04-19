@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,8 +23,18 @@ import { toast } from "sonner";
 import ProductForm from "@/components/admin/ProductForm";
 import DeleteProductDialog from "@/components/admin/DeleteProductDialog";
 import type { Product } from "@/components/products/ProductCard";
-import { mockData } from "@/data/mockData";
+import { mockData, recentUsers } from "@/data/mockData";
+import OrderSimulator from "@/components/admin/dashboard/OrderSimulator";
+import SalesChart from "@/components/admin/dashboard/SalesChart";
+import TopProducts from "@/components/admin/dashboard/TopProducts";
 import { type Order } from "@/components/admin/dashboard/mockData";
+
+// Extend Window interface to include our custom method
+declare global {
+  interface Window {
+    updateSalesChart?: (amount: number) => void;
+  }
+}
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
