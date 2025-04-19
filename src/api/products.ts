@@ -77,7 +77,7 @@ export const updateProduct = async (id: number, product: Partial<Product>): Prom
   if (product.image) dbProduct.image_url = product.image;
   if (product.merchant) dbProduct.merchant = product.merchant;
   if (product.category) dbProduct.category = product.category;
-  if (product.description) dbProduct.description = product.description;
+  if (product.description !== undefined) dbProduct.description = product.description;
   if (product.stock !== undefined) dbProduct.stock = product.stock;
 
   const { data, error } = await supabase

@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Product } from "@/components/products/ProductCard";
 import { toast } from "sonner";
+import { createOrder, CheckoutFormData } from "@/api/orders";
 
 export interface CartItem {
   product: Product;
@@ -16,6 +17,7 @@ interface CartContextType {
   clearCart: () => void;
   getCartTotal: () => number;
   getCartCount: () => number;
+  checkout: (shippingInfo: CheckoutFormData, paymentMethod: string) => Promise<boolean>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -101,6 +103,32 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const getCartCount = () => {
     return cartItems.reduce((count, item) => count + item.quantity, 0);
   };
+  
+  const checkout = async (shippingInfo: CheckoutFormData, paymentMethod: string) => {
+    try {
+      const subtotal = getCartTotal();
+      const taxRate = 0.07; // 7% tax
+      const tax = subtotal * taxRate;
+      const total = subtotal + tax;
+      
+      await createOrder({
+        items: cartItems,
+        shippingInfo,
+        paymentMethod,
+        subtotal,
+        tax,
+        total
+      });
+      
+      // Clear the cart after successful checkout
+      clearCart();
+      return true;
+    } catch (error) {
+      console.error("Checkout failed:", error);
+      toast.error("Checkout failed. Please try again.");
+      return false;
+    }
+  };
 
   return (
     <CartContext.Provider
@@ -112,6 +140,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         clearCart,
         getCartTotal,
         getCartCount,
+        checkout
       }}
     >
       {children}

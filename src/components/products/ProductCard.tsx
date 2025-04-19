@@ -1,8 +1,7 @@
-
-import { Link } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Star } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export interface Product {
   id: number;
@@ -13,8 +12,10 @@ export interface Product {
   rating: number;
   merchant: string;
   merchantLogo: string;
+  category: string;
+  description?: string;
+  stock?: number;
   discountPercentage?: number;
-  category?: string;
 }
 
 interface ProductCardProps {

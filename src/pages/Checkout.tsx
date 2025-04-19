@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, CheckCircle, CreditCard, ShoppingCart } from "lucide-react";
@@ -12,10 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
+import { CheckoutFormData } from "@/api/orders";
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { cartItems, getCartTotal, clearCart } = useCart();
+  const { cartItems, getCartTotal, checkout } = useCart();
   const { user } = useAuth();
   const [activeStep, setActiveStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -23,7 +23,7 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState("credit-card");
   
   // Form states
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CheckoutFormData>({
     firstName: "",
     lastName: "",
     email: user?.email || "",
@@ -32,10 +32,6 @@ const Checkout = () => {
     city: "",
     state: "",
     zipCode: "",
-    cardName: "",
-    cardNumber: "",
-    cardExpiry: "",
-    cardCvc: "",
   });
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,24 +59,24 @@ const Checkout = () => {
   const validatePaymentInfo = () => {
     if (paymentMethod === "credit-card") {
       const requiredFields = ['cardName', 'cardNumber', 'cardExpiry', 'cardCvc'];
-      const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
+      const missingFields = requiredFields.filter(field => !(formData as any)[field]);
       
       if (missingFields.length > 0) {
         toast.error("Please fill in all card details");
         return false;
       }
       
-      if (!/^\d{16}$/.test(formData.cardNumber.replace(/\s/g, ''))) {
+      if (!/^\d{16}$/.test((formData as any).cardNumber?.replace(/\s/g, ''))) {
         toast.error("Please enter a valid card number");
         return false;
       }
       
-      if (!/^\d{2}\/\d{2}$/.test(formData.cardExpiry)) {
+      if (!/^\d{2}\/\d{2}$/.test((formData as any).cardExpiry)) {
         toast.error("Please enter a valid expiry date (MM/YY)");
         return false;
       }
       
-      if (!/^\d{3,4}$/.test(formData.cardCvc)) {
+      if (!/^\d{3,4}$/.test((formData as any).cardCvc)) {
         toast.error("Please enter a valid CVC");
         return false;
       }
@@ -96,18 +92,27 @@ const Checkout = () => {
     }
   };
   
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!validatePaymentInfo()) return;
     
     setIsProcessing(true);
     
-    // Simulate order processing
-    setTimeout(() => {
+    try {
+      // Process order using CartContext checkout function
+      const success = await checkout(formData, paymentMethod);
+      
+      if (success) {
+        setOrderPlaced(true);
+        window.scrollTo(0, 0);
+      } else {
+        toast.error("There was a problem processing your order");
+      }
+    } catch (error) {
+      console.error("Order error:", error);
+      toast.error("Failed to place order. Please try again.");
+    } finally {
       setIsProcessing(false);
-      setOrderPlaced(true);
-      clearCart();
-      window.scrollTo(0, 0);
-    }, 2000);
+    }
   };
   
   // Redirect to cart if it's empty
@@ -311,7 +316,7 @@ const Checkout = () => {
                               <Input 
                                 id="cardName" 
                                 name="cardName" 
-                                value={formData.cardName}
+                                value={(formData as any).cardName}
                                 onChange={handleInputChange}
                                 required 
                               />
@@ -322,7 +327,7 @@ const Checkout = () => {
                                 id="cardNumber" 
                                 name="cardNumber" 
                                 placeholder="1234 5678 9012 3456"
-                                value={formData.cardNumber}
+                                value={(formData as any).cardNumber}
                                 onChange={handleInputChange}
                                 required 
                               />
@@ -334,7 +339,7 @@ const Checkout = () => {
                                   id="cardExpiry" 
                                   name="cardExpiry" 
                                   placeholder="MM/YY"
-                                  value={formData.cardExpiry}
+                                  value={(formData as any).cardExpiry}
                                   onChange={handleInputChange}
                                   required 
                                 />
@@ -345,7 +350,7 @@ const Checkout = () => {
                                   id="cardCvc" 
                                   name="cardCvc" 
                                   placeholder="123"
-                                  value={formData.cardCvc}
+                                  value={(formData as any).cardCvc}
                                   onChange={handleInputChange}
                                   required 
                                 />

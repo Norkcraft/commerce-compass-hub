@@ -1,6 +1,28 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Order } from "@/components/admin/dashboard/mockData";
+import { CartItem } from "@/contexts/CartContext";
+import { toast } from "sonner";
+
+export interface CheckoutFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
+export interface OrderDetails {
+  items: CartItem[];
+  shippingInfo: CheckoutFormData;
+  paymentMethod: string;
+  subtotal: number;
+  tax: number;
+  total: number;
+}
 
 export const fetchOrders = async (): Promise<Order[]> => {
   const { data, error } = await supabase
@@ -35,12 +57,12 @@ export const fetchOrders = async (): Promise<Order[]> => {
   // Transform the data to match our Order type
   const transformedOrders = data.map(order => ({
     id: `#${order.id.substring(0, 5)}`,
-    customer: `${order.customers.first_name} ${order.customers.last_name}`,
+    customer: `${order.customers?.first_name || ''} ${order.customers?.last_name || ''}`.trim() || 'Guest',
     date: new Date(order.created_at).toISOString().split('T')[0],
     status: order.status as "Pending" | "Processing" | "Completed" | "Cancelled",
     total: order.total,
     items: order.order_items.map(item => ({
-      name: item.products.name,
+      name: item.products?.name || 'Unknown Product',
       quantity: item.quantity,
       price: item.price
     }))
@@ -76,21 +98,82 @@ export const fetchRealtimeOrders = (onUpdate: (orders: Order[]) => void): (() =>
   };
 };
 
-export const createOrder = async (order: Omit<Order, "id" | "date">): Promise<Order> => {
-  // In a real app, this would create an order in the database
-  // For now, let's simulate it
-  const newOrderId = `#${Math.floor(10000 + Math.random() * 90000)}`;
-  const newOrder: Order = {
-    ...order,
-    id: newOrderId,
-    date: new Date().toISOString().split('T')[0],
-  };
-  
-  return newOrder;
+export const createOrder = async (orderDetails: OrderDetails): Promise<Order> => {
+  try {
+    // Get the current authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Start a transaction using a custom RPC function
+    const { data: orderId, error: orderError } = await supabase
+      .rpc('create_order', {
+        p_customer_id: user?.id || null,
+        p_first_name: orderDetails.shippingInfo.firstName,
+        p_last_name: orderDetails.shippingInfo.lastName,
+        p_email: orderDetails.shippingInfo.email,
+        p_address: orderDetails.shippingInfo.address,
+        p_city: orderDetails.shippingInfo.city,
+        p_state: orderDetails.shippingInfo.state,
+        p_zip: orderDetails.shippingInfo.zipCode,
+        p_payment_method: orderDetails.paymentMethod,
+        p_total: orderDetails.total
+      });
+
+    if (orderError) {
+      throw orderError;
+    }
+
+    // Create order items
+    for (const item of orderDetails.items) {
+      const { error: itemError } = await supabase
+        .from('order_items')
+        .insert({
+          order_id: orderId,
+          product_id: item.product.id.toString(),
+          quantity: item.quantity,
+          price: item.product.price
+        });
+
+      if (itemError) {
+        console.error("Error creating order item:", itemError);
+        throw itemError;
+      }
+    }
+
+    toast.success("Order placed successfully!");
+
+    // Return a simplified order representation
+    return {
+      id: `#${orderId.substring(0, 5)}`,
+      customer: `${orderDetails.shippingInfo.firstName} ${orderDetails.shippingInfo.lastName}`,
+      date: new Date().toISOString().split('T')[0],
+      status: "Pending",
+      total: orderDetails.total,
+      items: orderDetails.items.map(item => ({
+        name: item.product.name,
+        quantity: item.quantity,
+        price: item.product.price
+      }))
+    };
+  } catch (error) {
+    console.error("Error creating order:", error);
+    toast.error("Failed to place order. Please try again.");
+    throw error;
+  }
 };
 
 export const updateOrderStatus = async (id: string, status: "Pending" | "Processing" | "Completed" | "Cancelled"): Promise<void> => {
-  // In a real app, we would update the order in the database
-  // For now, we'll just simulate success
-  console.log(`Updated order ${id} status to ${status}`);
+  // Clean the ID (remove the # prefix)
+  const cleanId = id.startsWith('#') ? id.substring(1) : id;
+  
+  const { error } = await supabase
+    .from('orders')
+    .update({ status })
+    .eq('id', cleanId);
+
+  if (error) {
+    console.error("Error updating order status:", error);
+    throw error;
+  }
+  
+  toast.success(`Order ${id} status updated to ${status}`);
 };
