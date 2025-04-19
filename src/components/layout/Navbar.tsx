@@ -8,11 +8,13 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useCart } from "@/contexts/CartContext";
 
 const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { getCartCount } = useCart();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +32,8 @@ const Navbar = () => {
       toast.error(error.message);
     }
   };
+
+  const cartCount = getCartCount();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -82,9 +86,11 @@ const Navbar = () => {
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
               <span className="sr-only">Cart</span>
-              <span className="absolute top-0 right-0 h-4 w-4 text-xs bg-brand-500 text-white rounded-full flex items-center justify-center">
-                0
-              </span>
+              {cartCount > 0 && (
+                <span className="absolute top-0 right-0 h-4 w-4 text-xs bg-brand-500 text-white rounded-full flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
             </Button>
           </Link>
           {user ? (

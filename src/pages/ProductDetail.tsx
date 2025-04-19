@@ -19,20 +19,21 @@ import { Badge } from "@/components/ui/badge";
 import { mockProducts } from "@/data/mockProducts";
 import { Product } from "@/components/products/ProductCard";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
+import { Input } from "@/components/ui/input";
 
 const ProductDetail = () => {
   const { productId } = useParams<{ productId: string }>();
   const { toast } = useToast();
   const [selectedImage, setSelectedImage] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+  const { addToCart } = useCart();
   
   // In a real app, we would fetch this data from an API
   const product = mockProducts.find(p => p.id === Number(productId)) || mockProducts[0];
   
   const handleAddToCart = () => {
-    toast({
-      title: "Added to cart",
-      description: `${product.name} has been added to your cart.`,
-    });
+    addToCart(product, quantity);
   };
   
   // Mock price history data
@@ -170,15 +171,53 @@ const ProductDetail = () => {
               </p>
             </div>
             
-            <div className="flex items-center space-x-3 mb-8">
-              <Button size="lg" className="bg-brand-600 hover:bg-brand-700 w-2/3" onClick={handleAddToCart}>
-                <ShoppingCart className="mr-2 h-5 w-5" />
-                Add to Cart
-              </Button>
-              <Button size="lg" variant="outline" className="w-1/3">
-                <Heart className="mr-2 h-5 w-5" />
-                Save
-              </Button>
+            <div className="flex flex-col space-y-4 mb-8">
+              <div className="flex items-center space-x-4">
+                <div className="w-32">
+                  <label htmlFor="quantity" className="text-sm font-medium mb-1 block">
+                    Quantity
+                  </label>
+                  <div className="flex">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                      className="rounded-r-none"
+                    >
+                      -
+                    </Button>
+                    <Input 
+                      id="quantity"
+                      type="number" 
+                      min="1" 
+                      value={quantity} 
+                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-14 text-center rounded-none"
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => setQuantity(q => q + 1)}
+                      className="rounded-l-none"
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <Button size="lg" className="bg-brand-600 hover:bg-brand-700 w-2/3" onClick={handleAddToCart}>
+                  <ShoppingCart className="mr-2 h-5 w-5" />
+                  Add to Cart
+                </Button>
+                <Button size="lg" variant="outline" className="w-1/3">
+                  <Heart className="mr-2 h-5 w-5" />
+                  Save
+                </Button>
+              </div>
             </div>
             
             <div className="grid grid-cols-2 gap-4 text-sm">

@@ -13,10 +13,7 @@ export const fetchUsers = async (): Promise<User[]> => {
     .select(`
       id,
       first_name,
-      last_name,
-      auth.users!inner (
-        email
-      )
+      last_name
     `)
     .limit(10);
 
@@ -25,9 +22,10 @@ export const fetchUsers = async (): Promise<User[]> => {
     throw error;
   }
 
+  // For now, we'll mock the email since we can't access auth.users
   return data.map((customer, index) => ({
     id: index + 1, // Using index for display purposes
-    name: `${customer.first_name} ${customer.last_name}`,
-    email: customer.auth.users.email
+    name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || `User ${index + 1}`,
+    email: `user${index + 1}@example.com` // Mocked email
   }));
 };
