@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { generateNewOrder, type Order } from './mockData';
+import { createOrder } from '@/api/orders';
+import { supabase } from '@/integrations/supabase/client';
 
 type OrderSimulatorProps = {
   onNewOrder: (order: Order) => void;
@@ -12,19 +14,45 @@ type OrderSimulatorProps = {
 
 const OrderSimulator = ({ onNewOrder }: OrderSimulatorProps) => {
   const [isSimulating, setIsSimulating] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  // Check if user is logged in and has admin role
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      setIsLoggedIn(!!data.session);
+      
+      if (!data.session) {
+        toast.error("You need to be logged in as an admin to simulate orders");
+      }
+    };
+    
+    checkAuth();
+  }, []);
   
   useEffect(() => {
     let intervalId: number;
     
-    if (isSimulating) {
+    if (isSimulating && isLoggedIn) {
       // Generate new order every 5-15 seconds
-      const generateOrder = () => {
-        const newOrder = generateNewOrder();
-        onNewOrder(newOrder);
-        
-        toast.success(`${newOrder.customer} placed an order for $${newOrder.total.toFixed(2)}`, {
-          icon: <Package className="h-4 w-4" />,
-        });
+      const generateOrder = async () => {
+        try {
+          // Generate a mock order
+          const mockOrder = generateNewOrder();
+          
+          // In a real app, we would create this in the database
+          // For now, we'll just simulate it
+          const newOrder = await createOrder(mockOrder);
+          onNewOrder(newOrder);
+          
+          toast.success(`${newOrder.customer} placed an order for $${newOrder.total.toFixed(2)}`, {
+            icon: <Package className="h-4 w-4" />,
+          });
+        } catch (error) {
+          console.error("Failed to generate order:", error);
+          toast.error("Failed to generate order");
+          setIsSimulating(false);
+        }
       };
       
       intervalId = window.setInterval(() => {
@@ -37,7 +65,7 @@ const OrderSimulator = ({ onNewOrder }: OrderSimulatorProps) => {
         window.clearInterval(intervalId);
       }
     };
-  }, [isSimulating, onNewOrder]);
+  }, [isSimulating, isLoggedIn, onNewOrder]);
 
   return (
     <Card>
@@ -56,7 +84,13 @@ const OrderSimulator = ({ onNewOrder }: OrderSimulatorProps) => {
           </div>
           <Button
             variant={isSimulating ? "destructive" : "default"}
-            onClick={() => setIsSimulating(!isSimulating)}
+            onClick={() => {
+              if (!isLoggedIn) {
+                toast.error("You need to be logged in as an admin to simulate orders");
+                return;
+              }
+              setIsSimulating(!isSimulating);
+            }}
           >
             {isSimulating ? 'Stop Simulation' : 'Start Simulation'}
           </Button>

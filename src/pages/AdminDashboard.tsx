@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,8 @@ import {
   Edit,
   Trash2,
   FileText,
-  Plus
+  Plus,
+  Loader2
 } from "lucide-react";
 import { mockProducts } from "@/data/mockProducts";
 import { toast } from "sonner";
@@ -28,6 +28,12 @@ import OrderSimulator from "@/components/admin/dashboard/OrderSimulator";
 import SalesChart from "@/components/admin/dashboard/SalesChart";
 import TopProducts from "@/components/admin/dashboard/TopProducts";
 import { type Order } from "@/components/admin/dashboard/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchProducts, createProduct, updateProduct, deleteProduct } from "@/api/products";
+import { fetchOrders, fetchRealtimeOrders } from "@/api/orders";
+import { fetchUsers } from "@/api/users";
+import { useNavigate } from "react-router-dom";
 
 // Extend Window interface to include our custom method
 declare global {
@@ -37,17 +43,122 @@ declare global {
 }
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [showProductForm, setShowProductForm] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [products, setProducts] = useState(mockProducts);
-  const [recentOrders, setRecentOrders] = useState(mockData.recentOrders);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
+  // Check if user is an admin
+  useEffect(() => {
+    const checkAdmin = async () => {
+      setIsLoading(true);
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        
+        if (!session.session) {
+          // Redirect to login if not logged in
+          toast.error("You must be logged in to access the admin dashboard");
+          navigate("/auth");
+          return;
+        }
+        
+        // Check if user has admin role
+        const { data, error } = await supabase.rpc('is_admin');
+        
+        if (error) {
+          console.error("Error checking admin status:", error);
+          setIsAdmin(false);
+          toast.error("Failed to verify admin privileges");
+          navigate("/");
+        } else {
+          setIsAdmin(!!data);
+          if (!data) {
+            toast.error("You don't have permission to access the admin dashboard");
+            navigate("/");
+          }
+        }
+      } catch (error) {
+        console.error("Error in admin check:", error);
+        toast.error("Authentication error");
+        navigate("/");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAdmin();
+  }, [navigate]);
+  
+  // Fetch products data
+  const { 
+    data: products = [],
+    isLoading: productsLoading 
+  } = useQuery({
+    queryKey: ['products'],
+    queryFn: fetchProducts,
+    enabled: !isLoading && isAdmin
+  });
+  
+  // Set up realtime orders
+  useEffect(() => {
+    if (!isAdmin) return;
+    
+    const cleanup = fetchRealtimeOrders(orders => {
+      setRecentOrders(orders);
+    });
+    
+    return cleanup;
+  }, [isAdmin]);
+  
+  // Create product mutation
+  const createProductMutation = useMutation({
+    mutationFn: createProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success("Product added successfully");
+      setShowProductForm(false);
+    },
+    onError: () => {
+      toast.error("Failed to add product");
+    }
+  });
+  
+  // Update product mutation
+  const updateProductMutation = useMutation({
+    mutationFn: ({ id, product }: { id: number, product: Partial<Product> }) => 
+      updateProduct(id, product),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success("Product updated successfully");
+      setShowProductForm(false);
+    },
+    onError: () => {
+      toast.error("Failed to update product");
+    }
+  });
+  
+  // Delete product mutation
+  const deleteProductMutation = useMutation({
+    mutationFn: deleteProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success("Product deleted successfully");
+      setShowDeleteDialog(false);
+    },
+    onError: () => {
+      toast.error("Failed to delete product");
+    }
+  });
+
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.merchant.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    product.merchant?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     product.category?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -68,25 +179,18 @@ const AdminDashboard = () => {
 
   const handleProductSubmit = (productData: Partial<Product>) => {
     if (selectedProduct) {
-      setProducts(products.map(p => 
-        p.id === selectedProduct.id ? { ...p, ...productData } : p
-      ));
-      toast.success("Product updated successfully");
+      updateProductMutation.mutate({ 
+        id: selectedProduct.id, 
+        product: productData 
+      });
     } else {
-      const newProduct = {
-        ...productData,
-        id: Math.max(...products.map(p => p.id)) + 1,
-      } as Product;
-      setProducts([...products, newProduct]);
-      toast.success("Product added successfully");
+      createProductMutation.mutate(productData as Omit<Product, "id">);
     }
   };
 
   const handleProductDelete = () => {
     if (selectedProduct) {
-      setProducts(products.filter(p => p.id !== selectedProduct.id));
-      setShowDeleteDialog(false);
-      toast.success("Product deleted successfully");
+      deleteProductMutation.mutate(selectedProduct.id);
     }
   };
 
@@ -102,9 +206,21 @@ const AdminDashboard = () => {
       window.updateSalesChart(order.total);
     }
 
-    const updatedOrders = [order, ...recentOrders.slice(0, -1)];
-    setRecentOrders(updatedOrders);
+    setRecentOrders(prev => [order, ...prev.slice(0, -1)]);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
+        <span className="ml-2">Loading admin dashboard...</span>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return null; // The user will be redirected in the useEffect
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -226,22 +342,30 @@ const AdminDashboard = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {recentOrders.slice(0, 5).map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell className="font-medium">{order.id}</TableCell>
-                        <TableCell>{order.customer}</TableCell>
-                        <TableCell>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            order.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                            order.status === 'Processing' ? 'bg-blue-100 text-blue-800' :
-                            'bg-amber-100 text-amber-800'
-                          }`}>
-                            {order.status}
-                          </span>
+                    {recentOrders.length > 0 ? (
+                      recentOrders.slice(0, 5).map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell className="font-medium">{order.id}</TableCell>
+                          <TableCell>{order.customer}</TableCell>
+                          <TableCell>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              order.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                              order.status === 'Processing' ? 'bg-blue-100 text-blue-800' :
+                              'bg-amber-100 text-amber-800'
+                            }`}>
+                              {order.status}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                          No recent orders found. Try simulating some orders.
                         </TableCell>
-                        <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
                 <div className="mt-4">
@@ -313,62 +437,69 @@ const AdminDashboard = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Product Name</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Merchant</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Profit Margin</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredProducts.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 rounded bg-gray-200 mr-3 flex-shrink-0">
-                            <img src={product.image} alt={product.name} className="h-full w-full object-cover rounded" />
-                          </div>
-                          <span className="truncate max-w-[250px]">{product.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>${product.price.toFixed(2)}</TableCell>
-                      <TableCell>{product.merchant}</TableCell>
-                      <TableCell>{product.category}</TableCell>
-                      <TableCell>
-                        {product.originalPrice ? (
-                          <span className="text-green-600">
-                            {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
-                          </span>
-                        ) : (
-                          <span className="text-gray-500">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditProduct(product)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteProduct(product)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              {productsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+                  <span className="ml-2">Loading products...</span>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product Name</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Merchant</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Stock</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredProducts.length > 0 ? (
+                      filteredProducts.map((product) => (
+                        <TableRow key={product.id}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center">
+                              <div className="h-10 w-10 rounded bg-gray-200 mr-3 flex-shrink-0">
+                                <img src={product.image} alt={product.name} className="h-full w-full object-cover rounded" />
+                              </div>
+                              <span className="truncate max-w-[250px]">{product.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>${product.price.toFixed(2)}</TableCell>
+                          <TableCell>{product.merchant || 'N/A'}</TableCell>
+                          <TableCell>{product.category || 'N/A'}</TableCell>
+                          <TableCell>{product.stock || 0}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEditProduct(product)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteProduct(product)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          No products found. Add some products to get started.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
