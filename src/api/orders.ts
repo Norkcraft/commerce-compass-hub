@@ -103,24 +103,25 @@ export const createOrder = async (orderDetails: OrderDetails): Promise<Order> =>
     // Get the current authenticated user
     const { data: { user } } = await supabase.auth.getUser();
     
-    // Start a transaction using a custom RPC function
-    const { data: orderId, error: orderError } = await supabase
-      .rpc('create_order', {
-        p_customer_id: user?.id || null,
-        p_first_name: orderDetails.shippingInfo.firstName,
-        p_last_name: orderDetails.shippingInfo.lastName,
-        p_email: orderDetails.shippingInfo.email,
-        p_address: orderDetails.shippingInfo.address,
-        p_city: orderDetails.shippingInfo.city,
-        p_state: orderDetails.shippingInfo.state,
-        p_zip: orderDetails.shippingInfo.zipCode,
-        p_payment_method: orderDetails.paymentMethod,
-        p_total: orderDetails.total
-      });
+    // Create order using the custom create_order function
+    const { data, error } = await supabase.rpc('create_order', {
+      p_customer_id: user?.id,
+      p_first_name: orderDetails.shippingInfo.firstName,
+      p_last_name: orderDetails.shippingInfo.lastName,
+      p_email: orderDetails.shippingInfo.email,
+      p_address: orderDetails.shippingInfo.address,
+      p_city: orderDetails.shippingInfo.city,
+      p_state: orderDetails.shippingInfo.state,
+      p_zip: orderDetails.shippingInfo.zipCode,
+      p_payment_method: orderDetails.paymentMethod,
+      p_total: orderDetails.total
+    });
 
-    if (orderError) {
-      throw orderError;
+    if (error) {
+      throw error;
     }
+
+    const orderId = data;
 
     // Create order items
     for (const item of orderDetails.items) {
@@ -143,7 +144,7 @@ export const createOrder = async (orderDetails: OrderDetails): Promise<Order> =>
 
     // Return a simplified order representation
     return {
-      id: `#${orderId.substring(0, 5)}`,
+      id: `#${orderId.toString().substring(0, 5)}`,
       customer: `${orderDetails.shippingInfo.firstName} ${orderDetails.shippingInfo.lastName}`,
       date: new Date().toISOString().split('T')[0],
       status: "Pending",

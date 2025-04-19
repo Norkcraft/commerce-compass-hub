@@ -1,22 +1,20 @@
-
 import { useEffect, useState } from 'react';
 import { Bell, Package } from 'lucide-react';
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { generateNewOrder, type Order } from './mockData';
+import { generateNewOrder } from './mockData';
 import { createOrder } from '@/api/orders';
 import { supabase } from '@/integrations/supabase/client';
 
 type OrderSimulatorProps = {
-  onNewOrder: (order: Order) => void;
+  onNewOrder: (order: any) => void;
 };
 
 const OrderSimulator = ({ onNewOrder }: OrderSimulatorProps) => {
   const [isSimulating, setIsSimulating] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   
-  // Check if user is logged in and has admin role
   useEffect(() => {
     const checkAuth = async () => {
       const { data } = await supabase.auth.getSession();
@@ -34,14 +32,9 @@ const OrderSimulator = ({ onNewOrder }: OrderSimulatorProps) => {
     let intervalId: number;
     
     if (isSimulating && isLoggedIn) {
-      // Generate new order every 5-15 seconds
       const generateOrder = async () => {
         try {
-          // Generate a mock order
           const mockOrder = generateNewOrder();
-          
-          // In a real app, we would create this in the database
-          // For now, we'll just simulate it
           const newOrder = await createOrder(mockOrder);
           onNewOrder(newOrder);
           
@@ -57,7 +50,7 @@ const OrderSimulator = ({ onNewOrder }: OrderSimulatorProps) => {
       
       intervalId = window.setInterval(() => {
         generateOrder();
-      }, Math.random() * 10000 + 5000); // Random interval between 5-15 seconds
+      }, Math.random() * 10000 + 5000);
     }
     
     return () => {
