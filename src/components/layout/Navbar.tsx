@@ -13,7 +13,7 @@ import { useCart } from "@/contexts/CartContext";
 const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { getCartCount } = useCart();
 
   const handleSearch = (e: React.FormEvent) => {
@@ -101,12 +101,14 @@ const Navbar = () => {
                   <span className="sr-only">Account</span>
                 </Button>
               </Link>
-              <Link to="/admin">
-                <Button variant="ghost" size="icon">
-                  <BarChart className="h-5 w-5" />
-                  <span className="sr-only">Admin</span>
-                </Button>
-              </Link>
+              {isAdmin && (
+                <Link to="/admin">
+                  <Button variant="ghost" size="icon">
+                    <BarChart className="h-5 w-5" />
+                    <span className="sr-only">Admin</span>
+                  </Button>
+                </Link>
+              )}
               <Button
                 variant="outline"
                 size="sm"

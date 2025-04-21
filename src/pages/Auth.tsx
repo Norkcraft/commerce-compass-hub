@@ -24,8 +24,21 @@ const Auth = () => {
           password,
         });
         if (error) throw error;
-        toast.success("Logged in successfully");
-        navigate("/"); // Explicitly navigate to home page
+        
+        // Check if user is admin
+        const { data, error: adminCheckError } = await supabase.rpc('is_admin');
+        
+        if (adminCheckError) {
+          console.error("Error checking admin status:", adminCheckError);
+          toast.success("Logged in successfully");
+          navigate("/"); // Default redirect to home
+        } else if (data) {
+          toast.success("Logged in as admin");
+          navigate("/admin"); // Redirect to admin panel for admins
+        } else {
+          toast.success("Logged in successfully");
+          navigate("/"); // Default redirect to home for non-admins
+        }
       } else {
         const { error } = await supabase.auth.signUp({
           email,

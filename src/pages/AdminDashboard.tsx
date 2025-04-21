@@ -34,8 +34,8 @@ import { fetchProducts, createProduct, updateProduct, deleteProduct } from "@/ap
 import { fetchOrders, fetchRealtimeOrders } from "@/api/orders";
 import { fetchUsers } from "@/api/users";
 import { useNavigate } from "react-router-dom";
+import { useRequireAdmin } from "@/lib/auth";
 
-// Extend Window interface to include our custom method
 declare global {
   interface Window {
     updateSalesChart?: (amount: number) => void;
@@ -51,61 +51,9 @@ const AdminDashboard = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   
-  // Check if user is an admin
-  useEffect(() => {
-    const checkAdmin = async () => {
-      setIsLoading(true);
-      try {
-        const { data: session } = await supabase.auth.getSession();
-        
-        if (!session.session) {
-          // Redirect to login if not logged in
-          toast.error("You must be logged in to access the admin dashboard");
-          navigate("/auth");
-          return;
-        }
-        
-        // Check if user has admin role
-        const { data, error } = await supabase.rpc('is_admin');
-        
-        if (error) {
-          console.error("Error checking admin status:", error);
-          setIsAdmin(false);
-          toast.error("Failed to verify admin privileges");
-          navigate("/");
-        } else {
-          setIsAdmin(!!data);
-          if (!data) {
-            toast.error("You don't have permission to access the admin dashboard");
-            navigate("/");
-          }
-        }
-      } catch (error) {
-        console.error("Error in admin check:", error);
-        toast.error("Authentication error");
-        navigate("/");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    checkAdmin();
-  }, [navigate]);
+  const { isAdmin, loading } = useRequireAdmin();
   
-  // Fetch products data
-  const { 
-    data: products = [],
-    isLoading: productsLoading 
-  } = useQuery({
-    queryKey: ['products'],
-    queryFn: fetchProducts,
-    enabled: !isLoading && isAdmin
-  });
-  
-  // Set up realtime orders
   useEffect(() => {
     if (!isAdmin) return;
     
@@ -116,7 +64,15 @@ const AdminDashboard = () => {
     return cleanup;
   }, [isAdmin]);
   
-  // Create product mutation
+  const { 
+    data: products = [],
+    isLoading: productsLoading 
+  } = useQuery({
+    queryKey: ['products'],
+    queryFn: fetchProducts,
+    enabled: !loading && isAdmin
+  });
+  
   const createProductMutation = useMutation({
     mutationFn: createProduct,
     onSuccess: () => {
@@ -129,7 +85,6 @@ const AdminDashboard = () => {
     }
   });
   
-  // Update product mutation
   const updateProductMutation = useMutation({
     mutationFn: ({ id, product }: { id: number, product: Partial<Product> }) => 
       updateProduct(id, product),
@@ -143,7 +98,6 @@ const AdminDashboard = () => {
     }
   });
   
-  // Delete product mutation
   const deleteProductMutation = useMutation({
     mutationFn: deleteProduct,
     onSuccess: () => {
@@ -209,7 +163,7 @@ const AdminDashboard = () => {
     setRecentOrders(prev => [order, ...prev.slice(0, -1)]);
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
