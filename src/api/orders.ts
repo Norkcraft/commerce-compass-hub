@@ -135,7 +135,7 @@ export const createOrder = async (orderDetails: OrderDetails): Promise<Order> =>
       const { error: itemError } = await supabase
         .from('order_items')
         .insert({
-          order_id: orderId,
+          order_id: orderId.toString(), // Convert to string as required by the type
           product_id: item.product.id.toString(),
           quantity: item.quantity,
           price: item.product.price

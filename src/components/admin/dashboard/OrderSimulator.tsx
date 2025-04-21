@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { generateNewOrder } from './mockData';
 import { createOrder } from '@/api/orders';
 import { supabase } from '@/integrations/supabase/client';
+import { CartItem } from '@/contexts/CartContext';
 
 type OrderSimulatorProps = {
   onNewOrder: (order: any) => void;
@@ -39,6 +40,7 @@ const OrderSimulator = ({ onNewOrder }: OrderSimulatorProps) => {
           const mockOrder = generateNewOrder();
           
           // Convert the mock order to the format expected by createOrder
+          // Making sure to match the CartItem type with all required properties
           const orderDetails = {
             items: mockOrder.items.map(item => ({
               product: {
@@ -47,10 +49,13 @@ const OrderSimulator = ({ onNewOrder }: OrderSimulatorProps) => {
                 price: item.price,
                 image: "https://picsum.photos/200",
                 category: "Simulated",
-                merchant: "Simulator"
+                merchant: "Simulator",
+                // Add missing properties required by CartItem type
+                rating: 4.5,
+                merchantLogo: "https://picsum.photos/50"
               },
               quantity: item.quantity
-            })),
+            } as CartItem)),
             shippingInfo: {
               firstName: mockOrder.customer.split(' ')[0] || "Test",
               lastName: mockOrder.customer.split(' ')[1] || "User",
@@ -67,6 +72,7 @@ const OrderSimulator = ({ onNewOrder }: OrderSimulatorProps) => {
             total: mockOrder.total
           };
           
+          console.log("Sending order:", orderDetails);
           const newOrder = await createOrder(orderDetails);
           onNewOrder(newOrder);
           
