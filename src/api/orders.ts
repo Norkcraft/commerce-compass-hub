@@ -100,12 +100,16 @@ export const fetchRealtimeOrders = (onUpdate: (orders: Order[]) => void): (() =>
 
 export const createOrder = async (orderDetails: OrderDetails): Promise<Order> => {
   try {
+    console.log("Creating order with details:", JSON.stringify(orderDetails, null, 2));
+    
     // Get the current authenticated user
     const { data: { user } } = await supabase.auth.getUser();
+    console.log("Current user:", user);
     
-    // Create order using the custom create_order function
+    // Call the create_order function with parameter names explicitly specified
+    // to avoid TypeScript errors with function overloads
     const { data, error } = await supabase.rpc('create_order', {
-      p_customer_id: user?.id,
+      p_customer_id: user?.id || null,
       p_first_name: orderDetails.shippingInfo.firstName,
       p_last_name: orderDetails.shippingInfo.lastName,
       p_email: orderDetails.shippingInfo.email,
@@ -118,13 +122,16 @@ export const createOrder = async (orderDetails: OrderDetails): Promise<Order> =>
     });
 
     if (error) {
+      console.error("Error creating order:", error);
       throw error;
     }
 
     const orderId = data;
+    console.log("Order created with ID:", orderId);
 
     // Create order items
     for (const item of orderDetails.items) {
+      console.log("Creating order item:", item);
       const { error: itemError } = await supabase
         .from('order_items')
         .insert({
@@ -141,6 +148,7 @@ export const createOrder = async (orderDetails: OrderDetails): Promise<Order> =>
     }
 
     toast.success("Order placed successfully!");
+    console.log("Order completed successfully");
 
     // Return a simplified order representation
     return {

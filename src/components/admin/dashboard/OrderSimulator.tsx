@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Bell, Package } from 'lucide-react';
 import { toast } from "sonner";
@@ -34,8 +35,39 @@ const OrderSimulator = ({ onNewOrder }: OrderSimulatorProps) => {
     if (isSimulating && isLoggedIn) {
       const generateOrder = async () => {
         try {
+          // Generate a mock order with the correct structure
           const mockOrder = generateNewOrder();
-          const newOrder = await createOrder(mockOrder);
+          
+          // Convert the mock order to the format expected by createOrder
+          const orderDetails = {
+            items: mockOrder.items.map(item => ({
+              product: {
+                id: Math.floor(Math.random() * 1000).toString(),
+                name: item.name,
+                price: item.price,
+                image: "https://picsum.photos/200",
+                category: "Simulated",
+                merchant: "Simulator"
+              },
+              quantity: item.quantity
+            })),
+            shippingInfo: {
+              firstName: mockOrder.customer.split(' ')[0] || "Test",
+              lastName: mockOrder.customer.split(' ')[1] || "User",
+              email: "test@example.com",
+              phone: "123-456-7890",
+              address: "123 Test St",
+              city: "Test City",
+              state: "TS",
+              zipCode: "12345"
+            },
+            paymentMethod: "credit-card",
+            subtotal: mockOrder.total * 0.93, // Approximate to remove tax
+            tax: mockOrder.total * 0.07, // 7% tax
+            total: mockOrder.total
+          };
+          
+          const newOrder = await createOrder(orderDetails);
           onNewOrder(newOrder);
           
           toast.success(`${newOrder.customer} placed an order for $${newOrder.total.toFixed(2)}`, {

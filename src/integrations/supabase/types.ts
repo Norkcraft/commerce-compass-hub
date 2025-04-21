@@ -130,34 +130,58 @@ export type Database = {
       }
       orders: {
         Row: {
+          address: string | null
           address_id: string | null
+          city: string | null
           created_at: string | null
           customer_id: string | null
+          email: string | null
+          first_name: string | null
           id: string
+          last_name: string | null
           payment_intent_id: string | null
+          payment_method: string | null
+          state: string | null
           status: string
           total: number
           updated_at: string | null
+          zip: string | null
         }
         Insert: {
+          address?: string | null
           address_id?: string | null
+          city?: string | null
           created_at?: string | null
           customer_id?: string | null
+          email?: string | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           payment_intent_id?: string | null
+          payment_method?: string | null
+          state?: string | null
           status?: string
           total: number
           updated_at?: string | null
+          zip?: string | null
         }
         Update: {
+          address?: string | null
           address_id?: string | null
+          city?: string | null
           created_at?: string | null
           customer_id?: string | null
+          email?: string | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           payment_intent_id?: string | null
+          payment_method?: string | null
+          state?: string | null
           status?: string
           total?: number
           updated_at?: string | null
+          zip?: string | null
         }
         Relationships: [
           {
@@ -259,14 +283,17 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          role: string | null
           role_id: string
           user_id: string
         }
         Insert: {
+          role?: string | null
           role_id: string
           user_id: string
         }
         Update: {
+          role?: string | null
           role_id?: string
           user_id?: string
         }
@@ -280,11 +307,57 @@ export type Database = {
           },
         ]
       }
+      users: {
+        Row: {
+          created_at: string | null
+          email: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      create_order: {
+        Args:
+          | {
+              p_customer_id: string
+              p_address_id: number
+              p_payment_intent_id: string
+              p_total: number
+            }
+          | {
+              p_customer_id: string
+              p_first_name: string
+              p_last_name: string
+              p_email: string
+              p_address: string
+              p_city: string
+              p_state: string
+              p_zip: string
+              p_payment_method: string
+              p_total: number
+            }
+        Returns: number
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
