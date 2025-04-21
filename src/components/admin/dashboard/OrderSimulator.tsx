@@ -44,7 +44,7 @@ const OrderSimulator = ({ onNewOrder }: OrderSimulatorProps) => {
           const orderDetails = {
             items: mockOrder.items.map(item => ({
               product: {
-                id: Math.floor(Math.random() * 1000).toString(),
+                id: Math.floor(Math.random() * 1000), // id should be a number for CartItem type
                 name: item.name,
                 price: item.price,
                 image: "https://picsum.photos/200",
@@ -55,7 +55,7 @@ const OrderSimulator = ({ onNewOrder }: OrderSimulatorProps) => {
                 merchantLogo: "https://picsum.photos/50"
               },
               quantity: item.quantity
-            } as CartItem)),
+            } satisfies CartItem)), // This now will be type-safe
             shippingInfo: {
               firstName: mockOrder.customer.split(' ')[0] || "Test",
               lastName: mockOrder.customer.split(' ')[1] || "User",
