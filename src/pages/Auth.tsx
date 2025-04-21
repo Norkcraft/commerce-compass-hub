@@ -24,7 +24,8 @@ const Auth = () => {
           password,
         });
         if (error) throw error;
-        navigate("/");
+        toast.success("Logged in successfully");
+        navigate("/"); // Explicitly navigate to home page
       } else {
         const { error } = await supabase.auth.signUp({
           email,
